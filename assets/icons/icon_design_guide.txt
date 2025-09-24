@@ -1,0 +1,25 @@
+QR Scanner Icon Design Guide
+---------------------------
+
+- Style: Modern, elegant, minimal
+- Colors: Black, white, accent blue (#2196F3)
+- Elements: QR code motif + camera outline
+- Shape: Rounded square (for app icon compatibility)
+- Resolution: 512x512 px (main), scalable for smaller sizes
+- Format: PNG (transparent background)
+
+Design Concept:
+- Center: Stylized QR code (simple, bold squares)
+- Overlay: Camera lens or outline in accent blue
+- Corners: Rounded for a soft, modern look
+- No text, just iconography
+
+Usage:
+- Use this as a reference for generating PNG icon assets for Android/iOS/web.
+- For best results, use a vector tool (Figma, Illustrator, etc.) or an online icon generator.
+- Export to PNG, then resize for platform requirements.
+
+Next steps:
+- Generate icon PNG (512x512)
+- Copy to Android/iOS/web icon folders
+- Update project config to use new icon

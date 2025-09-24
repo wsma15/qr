@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="#fff" stroke="#222" stroke-width="16"/>
+  <!-- Modern QR code motif -->
+  <rect x="96" y="96" width="80" height="80" rx="20" fill="#222"/>
+  <rect x="96" y="336" width="80" height="80" rx="20" fill="#222"/>
+  <rect x="336" y="96" width="80" height="80" rx="20" fill="#222"/>
+  <rect x="336" y="336" width="80" height="80" rx="20" fill="#222"/>
+  <!-- Stylish blue accent squares -->
+  <rect x="208" y="208" width="32" height="32" rx="8" fill="#2196F3"/>
+  <rect x="272" y="208" width="32" height="32" rx="8" fill="#2196F3"/>
+  <rect x="208" y="272" width="32" height="32" rx="8" fill="#2196F3"/>
+  <rect x="272" y="272" width="32" height="32" rx="8" fill="#2196F3"/>
+  <!-- Decorative dots for a modern look -->
+  <circle cx="256" cy="256" r="12" fill="#222"/>
+  <circle cx="176" cy="176" r="8" fill="#2196F3"/>
+  <circle cx="336" cy="176" r="8" fill="#2196F3"/>
+  <circle cx="176" cy="336" r="8" fill="#2196F3"/>
+  <circle cx="336" cy="336" r="8" fill="#2196F3"/>
+</svg>

@@ -1,0 +1,33 @@
+name: qr_scanner
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  mobile_scanner: ^5.1.1
+  qr_flutter: ^4.1.0
+  image_picker: ^1.1.1
+  url_launcher: ^6.3.1
+  gallery_saver_plus: ^3.2.9
+  path_provider: ^2.1.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/qr_modern.png"
+
+flutter:
+  uses-material-design: true
