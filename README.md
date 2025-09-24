@@ -1,4 +1,4 @@
-# my_app
+# QR/Barcode Scanner
 
 A new Flutter project.
 
