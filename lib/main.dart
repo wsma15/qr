@@ -1,763 +1,643 @@
-import 'dart:async';
-import 'dart:io';
-import 'dart:ui' as ui;
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:gallery_saver_plus/gallery_saver.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const QRWRApp());
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  ThemeMode _themeMode = ThemeMode.system;
-
-  void _toggleThemeMode() {
-    setState(() {
-      _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
-    });
-  }
+class QRWRApp extends StatelessWidget {
+  const QRWRApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'QR Scanner',
-      themeMode: _themeMode,
+      title: 'QRWR',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.light,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
-        fontFamily: 'Roboto',
-        scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          backgroundColor: Color(0xFF6C63FF),
-          foregroundColor: Colors.white,
-          elevation: 2,
-          titleTextStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-        ),
-        cardTheme: CardThemeData(
-          elevation: 4,
-          color: Colors.white,
-          shadowColor: Color.fromRGBO(102, 51, 153, 0.1),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-        ),
-        textTheme: const TextTheme(
-          titleMedium: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-          bodyMedium: TextStyle(color: Color(0xFF333333)),
-        ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: ButtonStyle(
-            backgroundColor: WidgetStatePropertyAll(Color(0xFF6C63FF)),
-            foregroundColor: WidgetStatePropertyAll(Colors.white),
-            shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-            textStyle: WidgetStatePropertyAll(TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ),
       ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-        scaffoldBackgroundColor: const Color(0xFF181A20),
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          backgroundColor: Color(0xFF23234B),
-          foregroundColor: Colors.white,
-          elevation: 2,
-          titleTextStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-        ),
-        cardTheme: CardThemeData(
-          elevation: 4,
-          color: Color(0xFF23234B),
-          shadowColor: Color.fromRGBO(102, 51, 153, 0.2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+      home: const QrHomePage(),
+    );
+  }
+}
+
+class QrHomePage extends StatelessWidget {
+  const QrHomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('QRWR'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(icon: Icon(Icons.qr_code_scanner), text: 'قراءة'),
+              Tab(icon: Icon(Icons.qr_code_2), text: 'إنشاء'),
+            ],
           ),
         ),
-        textTheme: const TextTheme(
-          titleMedium: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          bodyMedium: TextStyle(color: Color(0xFFE3E3E3)),
-        ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: ButtonStyle(
-            backgroundColor: WidgetStatePropertyAll(Color(0xFF6C63FF)),
-            foregroundColor: WidgetStatePropertyAll(Colors.white),
-            shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-            textStyle: WidgetStatePropertyAll(TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ),
-      ),
-      home: QrHomePage(
-        onToggleTheme: _toggleThemeMode,
-        themeMode: _themeMode,
+        body: const TabBarView(children: [QrScannerView(), QrGeneratorView()]),
       ),
     );
   }
 }
 
-
-enum QrToolTab { scan, generate }
-
-class QrHomePage extends StatefulWidget {
-  final VoidCallback? onToggleTheme;
-  final ThemeMode? themeMode;
-  const QrHomePage({super.key, this.onToggleTheme, this.themeMode});
+class QrScannerView extends StatefulWidget {
+  const QrScannerView({super.key});
 
   @override
-  State<QrHomePage> createState() => _QrHomePageState();
+  State<QrScannerView> createState() => _QrScannerViewState();
 }
 
-class _QrHomePageState extends State<QrHomePage> {
-  int _selectedIndex = 0;
-  QrToolTab _toolTab = QrToolTab.scan;
-  final MobileScannerController _scannerController = MobileScannerController();
-  final TextEditingController _linkController = TextEditingController();
-  final ImagePicker _imagePicker = ImagePicker();
-  final GlobalKey _qrPreviewKey = GlobalKey();
-  final List<String> _favorites = <String>[];
+class _QrScannerViewState extends State<QrScannerView>
+    with WidgetsBindingObserver {
+  late final MobileScannerController _controller;
+  Barcode? _barcode;
+  bool _hasPermission = true;
+  bool _isFlashOn = false;
+  CameraFacing? _cameraFacing;
+  bool _isScanningPaused = false;
 
-  bool _isHandlingResult = false;
-  String? _qrData;
+  bool get _isSupportedCameraPlatform {
+    if (kIsWeb) {
+      return true;
+    }
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.windows;
+  }
 
   @override
   void initState() {
     super.initState();
-    _scannerController.addListener(_handleControllerUpdates);
+    WidgetsBinding.instance.addObserver(this);
+    _controller = MobileScannerController(
+      detectionSpeed: DetectionSpeed.normal,
+      facing: CameraFacing.back,
+      torchEnabled: false,
+      formats: const [BarcodeFormat.qrCode],
+      autoStart: false,
+    );
+    _controller.torchState.addListener(_handleTorchStateChanged);
+    _controller.cameraFacingState.addListener(_handleCameraFacingChanged);
+    _handleTorchStateChanged();
+    _handleCameraFacingChanged();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startScanner());
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      _controller.stop();
+      if (!_isScanningPaused) {
+        _startScanner();
+      }
+    }
   }
 
   @override
   void dispose() {
-    _scannerController.removeListener(_handleControllerUpdates);
-    _scannerController.dispose();
-    _linkController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _controller.torchState.removeListener(_handleTorchStateChanged);
+    _controller.cameraFacingState.removeListener(_handleCameraFacingChanged);
+    _controller.dispose();
     super.dispose();
   }
 
-  void _handleControllerUpdates() {
-    if (!mounted) return;
-    setState(() {});
-  }
-
-  void _handleNavigationTap(int index) {
+  void _handleTorchStateChanged() {
+    if (!mounted) {
+      return;
+    }
+    final torchState = _controller.torchState.value;
     setState(() {
-      _selectedIndex = index;
+      _isFlashOn = torchState == TorchState.on;
     });
   }
 
-  Future<void> _toggleTorch() async {
-    try {
-      await _scannerController.toggleTorch();
-    } on MobileScannerException catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+  void _handleCameraFacingChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _cameraFacing = _controller.cameraFacingState.value;
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (!_isSupportedCameraPlatform) {
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _controller.stop();
+    } else if (state == AppLifecycleState.resumed && !_isScanningPaused) {
+      _startScanner();
     }
   }
 
-  Future<void> _pickImageAndScan() async {
+  void _onDetect(BarcodeCapture capture) {
+    if (!mounted) {
+      return;
+    }
+    final barcodes = capture.barcodes;
+    if (barcodes.isEmpty) {
+      return;
+    }
+    final barcode = barcodes.firstWhere(
+      (candidate) => (candidate.rawValue ?? "").isNotEmpty,
+      orElse: () => barcodes.first,
+    );
+    setState(() {
+      _barcode = barcode;
+    });
+  }
+
+  Future<void> _startScanner() async {
     try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-      );
-      if (image == null) {
+      await _controller.start();
+      if (!mounted) {
         return;
       }
-      // تحليل الصورة للحصول على بيانات QR
-      final BarcodeCapture? capture = await MobileScannerController().analyzeImage(image.path);
-      final List<Barcode> barcodes = capture?.barcodes ?? [];
-      if (barcodes.isEmpty || barcodes.first.rawValue == null || barcodes.first.rawValue!.isEmpty) {
-        if (!mounted) return;
+      setState(() {
+        _hasPermission = true;
+      });
+    } on MobileScannerException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      if (error.errorCode == MobileScannerErrorCode.permissionDenied) {
+        setState(() {
+          _hasPermission = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('لم يتم العثور على رابط QR في الصورة المختارة.'),
+            content: Text("???? ?????? ??? ????????. ?????? ??? ?????."),
           ),
         );
-        return;
+      } else {
+        final message = error.errorDetails?.message ?? "???? ????? ????????.";
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
       }
-      final String qrLink = barcodes.first.rawValue!;
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('رابط QR'),
-          content: SelectableText(qrLink),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                if (await canLaunchUrl(Uri.parse(qrLink))) {
-                  await launchUrl(Uri.parse(qrLink));
-                }
-              },
-              child: const Text('فتح الرابط'),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _favorites.add(qrLink);
-                });
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تمت إضافة الرابط للمفضلة')),
-                );
-              },
-              child: const Text('إضافة للمفضلة'),
-            ),
-            TextButton(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: qrLink));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم نسخ الرابط!')),
-                );
-              },
-              child: const Text('نسخ الرابط'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('إغلاق'),
-            ),
-          ],
-        ),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('فشل في قراءة رمز QR من الصورة المختارة.'),
-        ),
-      );
     }
   }
 
-  Future<void> _onDetect(BarcodeCapture capture) async {
-    if (_isHandlingResult) return;
-    if (capture.barcodes.isEmpty) {
+  Future<void> _toggleFlash() async {
+    if (!_hasPermission) {
       return;
     }
+    await _controller.toggleTorch();
+  }
 
-    final Barcode barcode = capture.barcodes.first;
-    final String? value = barcode.rawValue;
-    if (value == null || value.isEmpty) {
+  Future<void> _flipCamera() async {
+    if (!_hasPermission) {
       return;
     }
+    await _controller.switchCamera();
+  }
 
-    _isHandlingResult = true;
-    if (!mounted) return;
-    // No need to set _scanResult, result is shown only in popup
-
-    // إظهار نافذة منبثقة عند مسح QR بالكاميرا
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('رابط QR'),
-        content: SelectableText(value),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              if (await canLaunchUrl(Uri.parse(value))) {
-                await launchUrl(Uri.parse(value));
-              }
-            },
-            child: const Text('فتح الرابط'),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _favorites.add(value);
-              });
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تمت إضافة الرابط للمفضلة')),
-              );
-            },
-            child: const Text('إضافة للمفضلة'),
-          ),
-          TextButton(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: value));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تم نسخ الرابط!')),
-              );
-            },
-            child: const Text('نسخ الرابط'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('إغلاق'),
-          ),
-        ],
+  Future<void> _copyResult() async {
+    final code = _barcode?.rawValue;
+    if (code == null || code.isEmpty) {
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: code));
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("?? ????? ??? ???????."),
       ),
     );
-
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    _isHandlingResult = false;
   }
 
-
-  void _generateQr() {
-    final String data = _linkController.text.trim();
-    if (data.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a link before generating.')),
-      );
-      return;
-    }
-
-    setState(() {
-      _qrData = data;
-    });
-  }
-
-  void _addFavorite(String value) {
-    final String link = value.trim();
-    if (link.isEmpty) {
-      return;
-    }
-    if (_favorites.contains(link)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Link is already in favorites.')),
-      );
-      return;
-    }
-
-    setState(() {
-      _favorites.insert(0, link);
-    });
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Added to favorites.')));
-  }
-
-  void _removeFavorite(String link) {
-    setState(() {
-      _favorites.remove(link);
-    });
-  }
-
-  void _useFavorite(String link) {
-    setState(() {
-      _linkController.text = link;
-      _qrData = link;
-      _selectedIndex = 0;
-      _toolTab = QrToolTab.generate;
-    });
-  }
-
-  Uri? _normalizeUri(String input) {
-    final String trimmed = input.trim();
-    if (trimmed.isEmpty) {
-      return null;
-    }
-    Uri? uri = Uri.tryParse(trimmed);
-    if (uri == null) {
-      return null;
-    }
-    if (!uri.hasScheme) {
-      uri = Uri.tryParse('https://$trimmed');
-    }
-    return uri;
-  }
-
-  Future<void> _openLink(String link) async {
-    final Uri? uri = _normalizeUri(link);
-    if (uri == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('This link is not valid.')));
-      return;
-    }
-
-    try {
-      final bool launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!launched && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open the link.')),
-        );
+  Future<void> _toggleScanning() async {
+    if (_isScanningPaused) {
+      await _startScanner();
+      if (!mounted || !_hasPermission) {
+        return;
       }
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Could not open the link.')));
+    } else {
+      await _controller.stop();
     }
-  }
 
-  Future<void> _saveQrImage() async {
-    if (_qrData == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Generate a QR code first.')),
-      );
+    if (!mounted) {
       return;
     }
-
-    final RenderRepaintBoundary? boundary =
-        _qrPreviewKey.currentContext?.findRenderObject()
-            as RenderRepaintBoundary?;
-    if (boundary == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Preview is not ready yet.')),
-      );
-      return;
-    }
-
-    try {
-      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      final ByteData? byteData = await image.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
-      if (byteData == null) {
-        throw Exception('Could not encode image.');
-      }
-      final Uint8List pngBytes = byteData.buffer.asUint8List();
-
-      final Directory tempDir = await getTemporaryDirectory();
-      final File file = await File(
-        '${tempDir.path}/qr_${DateTime.now().millisecondsSinceEpoch}.png',
-      ).create();
-      await file.writeAsBytes(pngBytes);
-
-      final bool? result = await GallerySaver.saveImage(
-        file.path,
-        albumName: 'QR Toolkit',
-      );
-
-      if (result == true) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Saved to gallery.')));
-      } else {
-        throw Exception('Save failed');
-      }
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not save the image: $error')),
-      );
-    }
+    setState(() {
+      _isScanningPaused = !_isScanningPaused;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isScanTab = _selectedIndex == 0 && _toolTab == QrToolTab.scan;
-    final TorchState torchState = _scannerController.value.torchState;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _selectedIndex == 0
-              ? (_toolTab == QrToolTab.scan
-                    ? 'Scan QR Code'
-                    : 'Generate QR Code')
-              : 'Favorites',
-        ),
-        actions: [
-          if (isScanTab) ...[
-            IconButton(
-              icon: Icon(
-                torchState == TorchState.on
-                    ? Icons.flash_on
-                    : Icons.flash_off,
+    if (!_isSupportedCameraPlatform) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.mobile_off,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
               ),
-              onPressed: _toggleTorch,
-            ),
-            IconButton(
-              icon: const Icon(Icons.cameraswitch),
-              onPressed: _scannerController.switchCamera,
-            ),
-            IconButton(
-              icon: const Icon(Icons.image_outlined),
-              onPressed: _pickImageAndScan,
-            ),
-          ],
-          IconButton(
-            icon: Icon(
-              Theme.of(context).brightness == Brightness.dark
-                  ? Icons.light_mode // شمس
-                  : Icons.dark_mode // قمر
-            ),
-            tooltip: Theme.of(context).brightness == Brightness.dark
-                ? 'الوضع الفاتح'
-                : 'الوضع الليلي',
-            onPressed: widget.onToggleTheme,
-          ),
-        ],
-      ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: [_buildToolsScreen(), _buildFavoritesView()],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _handleNavigationTap,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.qr_code_2), label: 'QR Tools'),
-          NavigationDestination(icon: Icon(Icons.favorite), label: 'Favorites'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToolsScreen() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-          child: SegmentedButton<QrToolTab>(
-            segments: const [
-              ButtonSegment<QrToolTab>(
-                value: QrToolTab.scan,
-                label: Text('Read QR'),
-                icon: Icon(Icons.qr_code_scanner),
+              const SizedBox(height: 16),
+              Text(
+                "?????? ??? ???????? ??? ???? ??? ??? ??????.",
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-              ButtonSegment<QrToolTab>(
-                value: QrToolTab.generate,
-                label: Text('Generate QR'),
-                icon: Icon(Icons.auto_awesome),
+              const SizedBox(height: 8),
+              Text(
+                "????? ?????? ??????? ??????? ???? ?? ????? ???? QR.",
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
-            selected: <QrToolTab>{_toolTab},
-            onSelectionChanged: (Set<QrToolTab> value) {
-              setState(() {
-                _toolTab = value.first;
-              });
-            },
+          ),
+        ),
+      );
+    }
+
+    final size = MediaQuery.sizeOf(context);
+    final scanArea =
+        (size.width < size.height ? size.width : size.height) * 0.7;
+
+    return Column(
+      children: [
+        Expanded(
+          flex: 4,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  MobileScanner(
+                    controller: _controller,
+                    fit: BoxFit.cover,
+                    onDetect: _onDetect,
+                    overlay: _ScannerOverlay(scanArea: scanArea),
+                  ),
+                  if (!_hasPermission)
+                    Container(
+                      color: Colors.black54,
+                      alignment: Alignment.center,
+                      child: const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text(
+                          "???? ??? ??? ???????? ?? ????????? ?? ????? ????????.",
+                          style: TextStyle(color: Colors.white),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
         Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            child: _toolTab == QrToolTab.scan
-                ? _buildScannerView()
-                : _buildGeneratorView(),
+          flex: 3,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  "???? ???????? ??? ??? QR ???? ??????? ???.",
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: _buildResultCard(context),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton.filledTonal(
+                      tooltip:
+                          _isFlashOn ? "????? ??????" : "????? ??????",
+                      onPressed: _hasPermission ? _toggleFlash : null,
+                      icon: Icon(
+                        _isFlashOn ? Icons.flash_on : Icons.flash_off,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    IconButton.filledTonal(
+                      tooltip: "????? ????????",
+                      onPressed: _hasPermission ? _flipCamera : null,
+                      icon: Icon(
+                        _cameraFacing == CameraFacing.front
+                            ? Icons.camera_front
+                            : Icons.camera_rear,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    IconButton.filledTonal(
+                      tooltip:
+                          _isScanningPaused ? "??????? ?????" : "????? ????? ??????",
+                      onPressed: _hasPermission ? _toggleScanning : null,
+                      icon: Icon(
+                        _isScanningPaused ? Icons.play_arrow : Icons.pause,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildScannerView() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-      child: Column(
-        children: [
-          Expanded(
-            child: Card(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: MobileScanner(
-                  controller: _scannerController,
-                  onDetect: _onDetect,
-                ),
-              ),
-            ),
-          ),
-          // Removed scan result section under camera. Only popup will show scan results.
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGeneratorView() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    controller: _linkController,
-                    decoration: const InputDecoration(
-                      labelText: 'Link or text',
-                      hintText: 'https://example.com',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.url,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _generateQr(),
-                    onChanged: (value) {
-                      if (value.trim().isEmpty) {
-                        setState(() {
-                          _qrData = null;
-                          _toolTab = QrToolTab.scan;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: _generateQr,
-                    icon: const Icon(Icons.qr_code_2),
-                    label: const Text('Generate QR'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          if (_qrData != null)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Text(
-                      'Preview',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    RepaintBoundary(
-                      key: _qrPreviewKey,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 12,
-                              offset: Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            QrImageView(
-                              data: _qrData!,
-                              size: 220,
-                              backgroundColor: Colors.white,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Hussein Alwisi',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.black),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        FilledButton.icon(
-                          onPressed: _saveQrImage,
-                          icon: const Icon(Icons.download),
-                          label: const Text('Save to gallery'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: () => _openLink(_qrData!),
-                          icon: const Icon(Icons.open_in_new),
-                          label: const Text('Open link'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: () => _addFavorite(_qrData!),
-                          icon: const Icon(Icons.favorite_border),
-                          label: const Text('Add to favorites'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFavoritesView() {
-    if (_favorites.isEmpty) {
+  Widget _buildResultCard(BuildContext context) {
+    final code = _barcode?.rawValue;
+    if (code == null || code.isEmpty) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Text(
-            'No favorites yet. Save links from the QR tools tab to access them quickly.',
-            style: Theme.of(context).textTheme.bodyLarge,
-            textAlign: TextAlign.center,
-          ),
+        child: Text(
+          _hasPermission
+              ? "?? ??? ?????? ?? ??? ???."
+              : "??? ??? ??? ???????? ??? ????? ?? ?????.",
+          textAlign: TextAlign.center,
         ),
       );
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(20),
-      itemCount: _favorites.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (BuildContext context, int index) {
-        final String link = _favorites[index];
-        return Card(
-          child: ListTile(
-            leading: const Icon(Icons.link),
-            title: Text(link),
-            onTap: () => _openLink(link),
-            subtitle: const Text('Tap an action to open, generate, or remove'),
-            trailing: Wrap(
-              spacing: 4,
-              children: [
-                IconButton(
-                  tooltip: 'Generate QR',
-                  icon: const Icon(Icons.qr_code_2),
-                  onPressed: () => _useFavorite(link),
-                ),
-                  IconButton(
-                    tooltip: 'Copy Link',
-                    icon: const Icon(Icons.copy),
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: link));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Link copied to clipboard')),
-                      );
-                    },
-                  ),
-                IconButton(
-                  tooltip: 'Remove',
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => _removeFavorite(link),
-                ),
-              ],
+    final uri = Uri.tryParse(code.trim());
+    final bool isUrl =
+        uri != null && uri.hasScheme && uri.host.isNotEmpty;
+    final TextDirection direction =
+        isUrl ? TextDirection.ltr : Directionality.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          "???????:",
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: SingleChildScrollView(
+            child: SelectableText(
+              code,
+              style: Theme.of(context).textTheme.bodyLarge,
+              textDirection: direction,
             ),
           ),
-        );
-      },
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          alignment: WrapAlignment.end,
+          spacing: 8,
+          children: [
+            TextButton.icon(
+              onPressed: _copyResult,
+              icon: const Icon(Icons.copy),
+              label: const Text("???"),
+            ),
+            if (isUrl)
+              Chip(
+                avatar: const Icon(Icons.link, size: 18),
+                label: Text(
+                  "????",
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+          ],
+        ),
+        if (_isScanningPaused)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              "????? ????? ??????. ???? ??? ?? ??????? ?????????.",
+              textAlign: TextAlign.center,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Theme.of(context).colorScheme.primary),
+            ),
+          ),
+      ],
     );
   }
 }
+
+class _ScannerOverlay extends StatelessWidget {
+  const _ScannerOverlay({required this.scanArea});
+
+  final double scanArea;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = Theme.of(context).colorScheme.primary;
+    return IgnorePointer(
+      child: Center(
+        child: Container(
+          width: scanArea,
+          height: scanArea,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: 8),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class QrGeneratorView extends StatefulWidget {
+  const QrGeneratorView({super.key});
+
+  @override
+  State<QrGeneratorView> createState() => _QrGeneratorViewState();
+}
+
+class _QrGeneratorViewState extends State<QrGeneratorView> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _textController = TextEditingController();
+  String? _qrData;
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  void _generateCode() {
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) {
+      setState(() {
+        _qrData = null;
+      });
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _qrData = _textController.text.trim();
+    });
+  }
+
+  Future<void> _copyGeneratedLink() async {
+    final data = _qrData;
+    if (data == null || data.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: data));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم نسخ الرابط إلى الحافظة.')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'حوّل أي رابط إلكتروني إلى رمز QR يمكن مشاركته أو حفظه.',
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              TextFormField(
+                controller: _textController,
+                keyboardType: TextInputType.url,
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(
+                  labelText: 'الرابط الإلكتروني',
+                  hintText: 'https://example.com',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  suffixIcon: _textController.text.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _textController.clear();
+                            setState(() {
+                              _qrData = null;
+                            });
+                          },
+                        ),
+                ),
+                textDirection: TextDirection.ltr,
+                validator: (value) {
+                  final input = value?.trim() ?? '';
+                  if (input.isEmpty) {
+                    return 'الرجاء إدخال رابط إلكتروني.';
+                  }
+                  final uri = Uri.tryParse(input);
+                  final isValidUrl =
+                      uri != null && uri.hasScheme && uri.hasAuthority;
+                  if (!isValidUrl) {
+                    return 'تأكد من أن الرابط يبدأ بـ https:// أو http://';
+                  }
+                  return null;
+                },
+                onChanged: (_) => setState(() {}),
+                onFieldSubmitted: (_) => _generateCode(),
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: _generateCode,
+                icon: const Icon(Icons.qr_code_2),
+                label: const Text('إنشاء الرمز'),
+              ),
+              const SizedBox(height: 32),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: _qrData == null
+                    ? const SizedBox.shrink()
+                    : Column(
+                        key: ValueKey(_qrData),
+                        children: [
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.05),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: QrImageView(
+                                data: _qrData!,
+                                version: QrVersions.auto,
+                                backgroundColor: Colors.white,
+                                size: 220,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SelectableText(
+                            _qrData!,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                            textDirection: TextDirection.ltr,
+                          ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.center,
+                            child: TextButton.icon(
+                              onPressed: _copyGeneratedLink,
+                              icon: const Icon(Icons.copy_all),
+                              label: const Text('نسخ الرابط'),
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+

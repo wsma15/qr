@@ -1,16 +1,33 @@
-# QR/Barcode Scanner
+# QRWR
 
-A new Flutter project.
+تطبيق Flutter مخصص لقراءة رموز QR باستخدام الكاميرا وإنشائها انطلاقًا من الروابط الإلكترونية. يوفر التطبيق تبويبين أساسيين:
 
-## Getting Started
+- **قراءة**: استخدم الكاميرا لمسح رمز QR مع إمكانية تفعيل الفلاش، تبديل الكاميرا، إيقاف المسح واستئنافه، ونسخ النتيجة فورًا.
+- **إنشاء**: أدخل رابطًا إلكترونيًا صالحًا وسيُنشئ التطبيق رمز QR يمكن نسخه ومشاركته بسهولة لاحقًا.
 
-This project is a starting point for a Flutter application.
+## المزايا
+- واجهة عربية بسيطة تعتمد على تصميم Material 3.
+- نسخ فوري لنتائج المسح والروابط المولدة مع رسائل تأكيد.
+- تنبيه للمنصات غير المدعومة (مثل الويب) بأن المسح متاح فقط للهواتف الذكية.
 
-A few resources to get you started if this is your first Flutter project:
+## المتطلبات
+- [Flutter](https://docs.flutter.dev/get-started/install) 3.13 أو أحدث.
+- هاتف بنظام Android أو iOS مع كاميرا للعمل على ميزة المسح.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## التشغيل
+1. ثبّت الحزم:
+   ```bash
+   flutter pub get
+   ```
+2. شغّل التطبيق على المحاكي أو الجهاز:
+   ```bash
+   flutter run
+   ```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## الحزم المستخدمة
+- [`qr_code_scanner`](https://pub.dev/packages/qr_code_scanner) لمسح رموز QR باستخدام الكاميرا.
+- [`qr_flutter`](https://pub.dev/packages/qr_flutter) لتوليد صور QR.
+
+## الملاحظات
+- تأكد من منح التطبيق صلاحية الوصول إلى الكاميرا عند التشغيل لأول مرة.
+- ميزة قراءة QR متاحة حاليًا على Android وiOS فقط، بينما يمكن إنشاء الرموز على مختلف المنصات.
